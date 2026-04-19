@@ -1,0 +1,257 @@
+/*************************************************************
+   BLOOD BANK MANAGEMENT SYSTEM
+   DATABASE ADMINISTRATION & MANAGEMENT LAB
+*************************************************************/
+
+-------------------------------------------------------------
+-- DATABASE
+-------------------------------------------------------------
+IF DB_ID('BloodBankDB') IS NULL
+    CREATE DATABASE BloodBankDB;
+GO
+USE BloodBankDB;
+GO
+
+-------------------------------------------------------------
+-- DROP TABLES (RESET)
+-------------------------------------------------------------
+IF OBJECT_ID('QualityControl','U') IS NOT NULL DROP TABLE QualityControl;
+IF OBJECT_ID('HospitalRequest','U') IS NOT NULL DROP TABLE HospitalRequest;
+IF OBJECT_ID('BloodInventory','U') IS NOT NULL DROP TABLE BloodInventory;
+IF OBJECT_ID('Recipient','U') IS NOT NULL DROP TABLE Recipient;
+IF OBJECT_ID('Hospital','U') IS NOT NULL DROP TABLE Hospital;
+IF OBJECT_ID('Donor','U') IS NOT NULL DROP TABLE Donor;
+GO
+
+-------------------------------------------------------------
+-- TABLES
+-------------------------------------------------------------
+CREATE TABLE Donor (
+    DonorID INT IDENTITY PRIMARY KEY,
+    FirstName VARCHAR(50),
+    LastName VARCHAR(50),
+    Gender CHAR(1),
+    DateOfBirth DATE,
+    BloodGroup VARCHAR(5),
+    DiseaseStatus VARCHAR(50),
+    ContactNumber VARCHAR(20),
+    Email VARCHAR(100),
+    Address VARCHAR(255),
+    RegistrationDate DATE DEFAULT GETDATE()
+);
+
+CREATE TABLE Hospital (
+    HospitalID INT IDENTITY PRIMARY KEY,
+    HospitalName VARCHAR(100),
+    ContactNumber VARCHAR(20),
+    Address VARCHAR(255)
+);
+
+CREATE TABLE Recipient (
+    RecipientID INT IDENTITY PRIMARY KEY,
+    FirstName VARCHAR(50),
+    LastName VARCHAR(50),
+    Gender CHAR(1),
+    DateOfBirth DATE,
+    BloodGroup VARCHAR(5),
+    ContactNumber VARCHAR(20),
+    Email VARCHAR(100),
+    Address VARCHAR(255),
+    HospitalID INT FOREIGN KEY REFERENCES Hospital(HospitalID)
+);
+
+CREATE TABLE BloodInventory (
+    BloodID INT IDENTITY PRIMARY KEY,
+    DonorID INT FOREIGN KEY REFERENCES Donor(DonorID),
+    CollectionDate DATE,
+    ExpiryDate DATE,
+    ContaminationStatus VARCHAR(10),
+    AvailabilityStatus VARCHAR(15)
+);
+
+CREATE TABLE HospitalRequest (
+    RequestID INT IDENTITY PRIMARY KEY,
+    HospitalID INT FOREIGN KEY REFERENCES Hospital(HospitalID),
+    RecipientID INT FOREIGN KEY REFERENCES Recipient(RecipientID),
+    BloodID INT FOREIGN KEY REFERENCES BloodInventory(BloodID),
+    RequestDate DATE DEFAULT GETDATE(),
+    Status VARCHAR(20)
+);
+
+CREATE TABLE QualityControl (
+    QCID INT IDENTITY PRIMARY KEY,
+    BloodID INT FOREIGN KEY REFERENCES BloodInventory(BloodID),
+    TestDate DATE,
+    TestResult VARCHAR(20),
+    Remarks VARCHAR(255)
+);
+GO
+
+-------------------------------------------------------------
+-- INSERT DATA
+-------------------------------------------------------------
+INSERT INTO Hospital VALUES
+('City Hospital','0421111111','Lahore'),
+('Care Medical Center','0422222222','Lahore'),
+('Shifa International','0213333333','Karachi'),
+('Faisal Hospital','0414444444','Faisalabad'),
+('Medicare Hospital','0515555555','Islamabad'),
+('Life Care Hospital','0616666666','Multan'),
+('National Hospital','0427777777','Lahore'),
+('Al Noor Hospital','0218888888','Karachi');
+
+INSERT INTO Donor VALUES
+('Ali','Khan','M','1995-05-10','A+','None','03001234567','ali@mail.com','Lahore',GETDATE()),
+('Sara','Ahmed','F','1998-07-15','O-','None','03111234567','sara@mail.com','Lahore',GETDATE()),
+('Umer','Rashid','M','1988-02-20','B+','Diabetes','03211234567','umer@mail.com','Lahore',GETDATE()),
+('Fatima','Malik','F','1999-11-11','AB+','None','03451234567','fatima@mail.com','Karachi',GETDATE()),
+('Ahmed','Zubair','M','2000-12-25','O+','Hepatitis','03561234567','ahmed@mail.com','Karachi',GETDATE()),
+('Ayesha','Malik','F','1999-04-18','B+','None','03021234567','ayesha@mail.com','Islamabad',GETDATE()),
+('Bilal','Hassan','M','1996-08-09','A-','None','03331234567','bilal@mail.com','Faisalabad',GETDATE()),
+('Hina','Yousaf','F','2001-01-01','O+','None','03411234567','hina@mail.com','Multan',GETDATE());
+
+INSERT INTO BloodInventory VALUES
+(1,'2025-06-01','2025-07-01','No','Available'),
+(2,'2025-06-05','2025-07-05','No','Available'),
+(3,'2025-05-20','2025-06-20','Yes','Used'),
+(4,'2025-06-10','2025-07-10','No','Available'),
+(5,'2025-05-15','2025-06-15','Yes','Used'),
+(6,'2025-06-12','2025-07-12','No','Available'),
+(7,'2025-06-14','2025-07-14','No','Available'),
+(8,'2025-06-16','2025-07-16','No','Available');
+
+INSERT INTO Recipient VALUES
+('Ahmad','Raza','M','2000-02-20','A+','03011223344','ahmad@mail.com','Lahore',1),
+('Zainab','Ali','F','1997-03-12','O-','03011223355','zainab@mail.com','Lahore',2),
+('Usman','Iqbal','M','2002-03-15','B+','03019876543','usman@mail.com','Karachi',3),
+('Maryam','Khalid','F','2001-09-10','AB+','03014567890','maryam@mail.com','Islamabad',5),
+('Hamza','Javed','M','1998-04-22','O+','03114567890','hamza@mail.com','Multan',6);
+
+INSERT INTO HospitalRequest VALUES
+(1,1,1,GETDATE(),'Pending'),
+(2,2,2,GETDATE(),'Completed'),
+(3,3,4,GETDATE(),'Pending'),
+(4,4,6,GETDATE(),'Pending'),
+(5,5,7,GETDATE(),'Completed');
+
+INSERT INTO QualityControl VALUES
+(1,'2025-06-02','Passed','Safe'),
+(3,'2025-05-21','Failed','Contaminated'),
+(4,'2025-06-11','Passed','Safe'),
+(6,'2025-06-13','Passed','Safe'),
+(8,'2025-06-17','Passed','Safe');
+GO
+
+-------------------------------------------------------------
+-- INDEXES
+-------------------------------------------------------------
+CREATE INDEX idx_Donor_BloodGroup ON Donor(BloodGroup);
+CREATE INDEX idx_Blood_Availability ON BloodInventory(AvailabilityStatus);
+GO
+
+-------------------------------------------------------------
+-- VIEWS
+-------------------------------------------------------------
+IF OBJECT_ID('vw_AvailableBlood','V') IS NOT NULL DROP VIEW vw_AvailableBlood;
+GO
+CREATE VIEW vw_AvailableBlood AS
+SELECT b.BloodID, d.BloodGroup, b.AvailabilityStatus
+FROM BloodInventory b
+JOIN Donor d ON b.DonorID = d.DonorID
+WHERE b.AvailabilityStatus='Available';
+GO
+
+IF OBJECT_ID('vw_HealthyDonors','V') IS NOT NULL DROP VIEW vw_HealthyDonors;
+GO
+CREATE VIEW vw_HealthyDonors AS
+SELECT * FROM Donor WHERE DiseaseStatus='None';
+GO
+
+-------------------------------------------------------------
+-- STORED PROCEDURES
+-------------------------------------------------------------
+IF OBJECT_ID('GetBloodByGroup','P') IS NOT NULL
+    DROP PROCEDURE GetBloodByGroup;
+GO
+CREATE PROCEDURE GetBloodByGroup
+    @BloodGroup VARCHAR(5)
+AS
+BEGIN
+    SELECT FirstName, LastName, BloodGroup
+    FROM Donor
+    WHERE BloodGroup = @BloodGroup;
+END;
+GO
+
+IF OBJECT_ID('PendingRequests','P') IS NOT NULL
+    DROP PROCEDURE PendingRequests;
+GO
+CREATE PROCEDURE PendingRequests
+AS
+BEGIN
+    SELECT * FROM HospitalRequest WHERE Status='Pending';
+END;
+GO
+
+-------------------------------------------------------------
+-- TRIGGER
+-------------------------------------------------------------
+IF OBJECT_ID('trg_UpdateAvailability','TR') IS NOT NULL
+    DROP TRIGGER trg_UpdateAvailability;
+GO
+CREATE TRIGGER trg_UpdateAvailability
+ON HospitalRequest
+AFTER INSERT
+AS
+BEGIN
+    UPDATE BloodInventory
+    SET AvailabilityStatus='Used'
+    WHERE BloodID IN (SELECT BloodID FROM inserted);
+END;
+GO
+
+-------------------------------------------------------------
+-- COMPLEX JOIN REPORT
+-------------------------------------------------------------
+SELECT 
+    d.FirstName + ' ' + d.LastName AS DonorName,
+    d.BloodGroup,
+    h.HospitalName,
+    r.FirstName + ' ' + r.LastName AS RecipientName,
+    hr.Status
+FROM HospitalRequest hr
+JOIN Hospital h ON hr.HospitalID = h.HospitalID
+JOIN Recipient r ON hr.RecipientID = r.RecipientID
+JOIN BloodInventory b ON hr.BloodID = b.BloodID
+JOIN Donor d ON b.DonorID = d.DonorID;
+GO
+
+-- Donor table output
+SELECT * FROM Donor;
+GO
+
+-- Recipient table output
+SELECT * FROM Recipient;
+GO
+
+-- Hospital table output
+SELECT * FROM Hospital;
+GO
+
+-- Blood Inventory table output
+SELECT * FROM BloodInventory;
+GO
+
+-- Hospital Request table output
+SELECT * FROM HospitalRequest;
+GO
+
+-- Quality Control table output
+SELECT * FROM QualityControl;
+GO
+   
+-- Views output (optional)
+SELECT * FROM vw_AvailableBlood;
+GO
+SELECT * FROM vw_HealthyDonors;
+GO
